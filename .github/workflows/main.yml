@@ -9,21 +9,25 @@ jobs:
     runs-on: ubuntu-latest 
 
     steps:
-      - name: install ssh keys
-        shell: bash
-        run: |
-          set -euo pipefail
-          mkdir -p "$HOME/.ssh"
-          chmod 700 "$HOME/.ssh"
+     - name: install ssh keys
+       shell: bash
+       run: |
+        set -euo pipefail
+        KEYFILE="${RUNNER_TEMP:-/tmp}/id_rsa"
+        KNOWNHOSTS="${RUNNER_TEMP:-/tmp}/known_hosts"
       
-          # write private key
-          printf '%s\n' "${{ secrets.SSH_PRIVATE_KEY }}" > "$KEYFILE"
-          chmod 600 "$HOME/.ssh/id_rsa"
+        printf '%s\n' "${{ secrets.SSH_PRIVATE_KEY }}" | tr -d '\r' > "$KEYFILE"
+        chmod 600 "$KEYFILE"
+        ssh-keyscan -H "${{ secrets.SSH_HOST }}" > "$KNOWNHOSTS"
+        chmod 600 "$KNOWNHOSTS"
       
-          # add host key
-          ssh-keyscan -H "${{ secrets.SSH_HOST }}" >> "$HOME/.ssh/known_hosts"
-          chmod 600 "$HOME/.ssh/known_hosts"
-      - name: connect and pull
-        run: ssh ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} "cd ${{ secrets.WORK_DIR }} && git checkout ${{ secrets.MAIN_BRANCH }} && git pull && exit"
-      - name: cleanup
-        run: rm -rf ~/.ssh
+     - name: connect and pull
+       shell: bash
+       run: |
+        set -euo pipefail
+        KEYFILE="${RUNNER_TEMP:-/tmp}/id_rsa"
+        KNOWNHOSTS="${RUNNER_TEMP:-/tmp}/known_hosts"
+      
+        ssh -i "$KEYFILE" -o IdentitiesOnly=yes -o UserKnownHostsFile="$KNOWNHOSTS" \
+         "${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }}" \
+         "set -e; cd '${{ secrets.WORK_DIR }}'; git fetch origin; git checkout '${{ secrets.MAIN_BRANCH }}'; git pull --ff-only;"
