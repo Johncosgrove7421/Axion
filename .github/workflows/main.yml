@@ -14,33 +14,35 @@ jobs:
         with:
           service-key: ${{ secrets.TWINGATE_SERVICE_KEY }}
 
-      - name: SSH key + known_hosts
-        shell: bash
-        run: |
-          set -euo pipefail
-          mkdir -p "$HOME/.ssh"
-          chmod 700 "$HOME/.ssh"
-
-          eval "$(ssh-agent -s)"
-          echo "${{ secrets.SSH_PRIVATE_KEY }}" | tr -d '\r' | ssh-add -
-
-          # If you want strict checking, keep this:
-          ssh-keyscan -T 5 -p 22 -H "${{ secrets.SSH_HOST }}" >> "$HOME/.ssh/known_hosts"
-          chmod 600 "$HOME/.ssh/known_hosts"
-
       - name: Debug reachability (optional)
         shell: bash
         run: |
           set -euo pipefail
           nc -vz -w 5 "${{ secrets.SSH_HOST }}" 22
 
+      # Combined step: ssh-agent + known_hosts + ssh must be in same step
       - name: Deploy
         shell: bash
         run: |
           set -euo pipefail
+
+          # Prepare SSH dir
+          mkdir -p "$HOME/.ssh"
+          chmod 700 "$HOME/.ssh"
+
+          # Start agent + add key (agent is only valid within this step)
+          eval "$(ssh-agent -s)"
+          echo "${{ secrets.SSH_PRIVATE_KEY }}" | tr -d '\r' | ssh-add -
+
+          # Strict host key checking (safe)
+          ssh-keyscan -T 5 -p 22 -H "${{ secrets.SSH_HOST }}" >> "$HOME/.ssh/known_hosts"
+          chmod 600 "$HOME/.ssh/known_hosts"
+
+          # Test login (replace "echo ok" with your deploy command when confirmed)
           ssh -vvv -p 22 \
             -o BatchMode=yes \
             -o PreferredAuthentications=publickey \
             -o IdentitiesOnly=yes \
             -o UserKnownHostsFile="$HOME/.ssh/known_hosts" \
-            pi@${{ secrets.SSH_HOST }} "echo ok"
+            "pi@${{ secrets.SSH_HOST }}" \
+            "echo ok"
