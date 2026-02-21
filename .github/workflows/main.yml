@@ -12,16 +12,22 @@ jobs:
         with:
           service-key: ${{ secrets.TWINGATE_SERVICE_KEY }}
 
-      - name: Prepare SSH
+      - name: Debug SSH reachability
         shell: bash
         run: |
           set -euo pipefail
-          mkdir -p "$HOME/.ssh"
-          chmod 700 "$HOME/.ssh"
-
-          # Add host key (or skip if you prefer StrictHostKeyChecking=no)
-          ssh-keyscan -H "${{ secrets.SSH_HOST }}" >> "$HOME/.ssh/known_hosts"
-          chmod 600 "$HOME/.ssh/known_hosts"
+          echo "SSH_HOST=${{ secrets.SSH_HOST }}"
+          echo "SSH_PORT=${{ secrets.SSH_PORT || '22' }}"
+      
+          # DNS
+          getent hosts "${{ secrets.SSH_HOST }}" || true
+      
+          # Port check (prefers nc, falls back to bash)
+          if command -v nc >/dev/null 2>&1; then
+            nc -vz -w 5 "${{ secrets.SSH_HOST }}" "${{ secrets.SSH_PORT || '22' }}"
+          else
+            timeout 5 bash -lc "</dev/tcp/${{ secrets.SSH_HOST }}/${{ secrets.SSH_PORT || '22' }}" && echo "port open"
+          fi
 
       - name: SSH to Pi and run command
         shell: bash
