@@ -17,7 +17,7 @@ jobs:
           chmod 700 "$HOME/.ssh"
       
           # write private key
-          printf '%s\n' "${{ secrets.SSH_PRIVATE_KEY }}" | tr -d '\r' > "$HOME/.ssh/id_rsa"
+          printf '%s\n' "${{ secrets.SSH_PRIVATE_KEY }}" > "$KEYFILE"
           chmod 600 "$HOME/.ssh/id_rsa"
       
           # add host key
