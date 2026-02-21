@@ -38,7 +38,23 @@ jobs:
           # Add host key (port 22 — change if needed)
           ssh-keyscan -T 5 -p 22 -H "${{ secrets.SSH_HOST }}" >> "$HOME/.ssh/known_hosts"
           chmod 600 "$HOME/.ssh/known_hosts"
-
+      - name: Debug SSH key being used
+        shell: bash
+        run: |
+          set -euo pipefail
+          eval "$(ssh-agent -s)"
+          echo "${{ secrets.SSH_PRIVATE_KEY }}" | tr -d '\r' | ssh-add -
+      
+          echo "Keys loaded into agent:"
+          ssh-add -l || true
+      
+          # Print fingerprint of the private key WITHOUT exposing it
+          tmpkey="$(mktemp)"
+          echo "${{ secrets.SSH_PRIVATE_KEY }}" | tr -d '\r' > "$tmpkey"
+          chmod 600 "$tmpkey"
+          echo "Fingerprint of CI private key:"
+          ssh-keygen -lf "$tmpkey"
+          rm -f "$tmpkey"
       # SSH + Pull
       - name: Deploy on Pi
         shell: bash
