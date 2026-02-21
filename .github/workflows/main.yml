@@ -12,9 +12,24 @@ jobs:
         with:
           service-key: ${{ secrets.TWINGATE_SERVICE_KEY }}
 
-      - name: SSH to Pi
+      - name: Prepare SSH
         shell: bash
         run: |
           set -euo pipefail
-          ssh-keyscan -H "${{ secrets.SSH_HOST }}" >> ~/.ssh/known_hosts
-          ssh "${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }}" "hostname; uptime"
+          mkdir -p "$HOME/.ssh"
+          chmod 700 "$HOME/.ssh"
+
+          # Add host key (or skip if you prefer StrictHostKeyChecking=no)
+          ssh-keyscan -H "${{ secrets.SSH_HOST }}" >> "$HOME/.ssh/known_hosts"
+          chmod 600 "$HOME/.ssh/known_hosts"
+
+      - name: SSH to Pi and run command
+        shell: bash
+        run: |
+          set -euo pipefail
+          eval "$(ssh-agent -s)"
+          echo "${{ secrets.SSH_PRIVATE_KEY }}" | tr -d '\r' | ssh-add -
+
+          ssh -o IdentitiesOnly=yes \
+              "${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }}" \
+              "hostname; uptime"
