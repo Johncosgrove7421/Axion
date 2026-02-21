@@ -4,30 +4,17 @@ on:
       - Master
   workflow_dispatch:
 jobs:
-  run_pull:
-    name: run pull
-    runs-on: ubuntu-latest 
-
+  deploy:
+    runs-on: ubuntu-latest
     steps:
-     - name: install ssh keys
-       shell: bash
-       run: |
-        set -euo pipefail
-        KEYFILE="${RUNNER_TEMP:-/tmp}/id_rsa"
-        KNOWNHOSTS="${RUNNER_TEMP:-/tmp}/known_hosts"
-      
-        printf '%s\n' "${{ secrets.SSH_PRIVATE_KEY }}" | tr -d '\r' > "$KEYFILE"
-        chmod 600 "$KEYFILE"
-        ssh-keyscan -H "${{ secrets.SSH_HOST }}" > "$KNOWNHOSTS"
-        chmod 600 "$KNOWNHOSTS"
-      
-     - name: connect and pull
-       shell: bash
-       run: |
-        set -euo pipefail
-        KEYFILE="${RUNNER_TEMP:-/tmp}/id_rsa"
-        KNOWNHOSTS="${RUNNER_TEMP:-/tmp}/known_hosts"
-      
-        ssh -i "$KEYFILE" -o IdentitiesOnly=yes -o UserKnownHostsFile="$KNOWNHOSTS" \
-         "${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }}" \
-         "set -e; cd '${{ secrets.WORK_DIR }}'; git fetch origin; git checkout '${{ secrets.MAIN_BRANCH }}'; git pull --ff-only;"
+      - name: Connect to Twingate
+        uses: twingate/github-action@v1
+        with:
+          service-key: ${{ secrets.TWINGATE_SERVICE_KEY }}
+
+      - name: SSH to Pi
+        shell: bash
+        run: |
+          set -euo pipefail
+          ssh-keyscan -H "${{ secrets.SSH_HOST }}" >> ~/.ssh/known_hosts
+          ssh "${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }}" "hostname; uptime"
