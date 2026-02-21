@@ -1,41 +1,56 @@
+name: Deploy to Pi
+
 on:
   push:
-    branches:
-      - Master
+    branches: [ Master ]
   workflow_dispatch:
+
 jobs:
   deploy:
     runs-on: ubuntu-latest
+
     steps:
+      # Connect to Twingate
       - name: Connect to Twingate
         uses: twingate/github-action@v1
         with:
           service-key: ${{ secrets.TWINGATE_SERVICE_KEY }}
 
-      - name: Debug SSH reachability
+      # Setup SSH
+      - name: Setup SSH
         shell: bash
         run: |
           set -euo pipefail
-          echo "SSH_HOST=${{ secrets.SSH_HOST }}"
-          echo "SSH_PORT=${{ secrets.SSH_PORT || '22' }}"
-      
-          # DNS
-          getent hosts "${{ secrets.SSH_HOST }}" || true
-      
-          # Port check (prefers nc, falls back to bash)
-          if command -v nc >/dev/null 2>&1; then
-            nc -vz -w 5 "${{ secrets.SSH_HOST }}" "${{ secrets.SSH_PORT || '22' }}"
-          else
-            timeout 5 bash -lc "</dev/tcp/${{ secrets.SSH_HOST }}/${{ secrets.SSH_PORT || '22' }}" && echo "port open"
-          fi
 
-      - name: SSH to Pi and run command
-        shell: bash
-        run: |
-          set -euo pipefail
+          # Start ssh-agent
           eval "$(ssh-agent -s)"
+
+          # Add private key
           echo "${{ secrets.SSH_PRIVATE_KEY }}" | tr -d '\r' | ssh-add -
 
-          ssh -o IdentitiesOnly=yes \
-              "${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }}" \
-              "hostname; uptime"
+          # Create .ssh directory
+          mkdir -p "$HOME/.ssh"
+          chmod 700 "$HOME/.ssh"
+
+          # Remove any stale host entry
+          ssh-keygen -R "${{ secrets.SSH_HOST }}" || true
+
+          # Add host key (port 22 — change if needed)
+          ssh-keyscan -T 5 -p 22 -H "${{ secrets.SSH_HOST }}" >> "$HOME/.ssh/known_hosts"
+          chmod 600 "$HOME/.ssh/known_hosts"
+
+      # SSH + Pull
+      - name: Deploy on Pi
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          ssh -p 22 \
+            -o IdentitiesOnly=yes \
+            -o UserKnownHostsFile="$HOME/.ssh/known_hosts" \
+            "${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }}" \
+            "set -e;
+             cd '${{ secrets.WORK_DIR }}';
+             git fetch origin;
+             git checkout '${{ secrets.MAIN_BRANCH }}';
+             git pull --ff-only;"
