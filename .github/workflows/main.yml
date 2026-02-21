@@ -8,52 +8,45 @@ on:
 jobs:
   deploy:
     runs-on: ubuntu-latest
-
     steps:
-      # Connect to Twingate
       - name: Connect to Twingate
         uses: twingate/github-action@v1
         with:
           service-key: ${{ secrets.TWINGATE_SERVICE_KEY }}
 
-      # Setup SSH
-      - name: Setup SSH
+      - name: SSH key + known_hosts
         shell: bash
         run: |
           set -euo pipefail
-
-          # Start ssh-agent
-          eval "$(ssh-agent -s)"
-
-          # Add private key
-          echo "${{ secrets.SSH_PRIVATE_KEY }}" | tr -d '\r' | ssh-add -
-
-          # Create .ssh directory
           mkdir -p "$HOME/.ssh"
           chmod 700 "$HOME/.ssh"
 
-          # Remove any stale host entry
-          ssh-keygen -R "${{ secrets.SSH_HOST }}" || true
+          eval "$(ssh-agent -s)"
+          echo "${{ secrets.SSH_PRIVATE_KEY }}" | tr -d '\r' | ssh-add -
 
-          # Add host key (port 22 — change if needed)
+          # If you want strict checking, keep this:
           ssh-keyscan -T 5 -p 22 -H "${{ secrets.SSH_HOST }}" >> "$HOME/.ssh/known_hosts"
           chmod 600 "$HOME/.ssh/known_hosts"
+
+      - name: Debug reachability (optional)
+        shell: bash
+        run: |
+          set -euo pipefail
+          nc -vz -w 5 "${{ secrets.SSH_HOST }}" 22
+
       - name: Deploy
         shell: bash
         run: |
           set -euo pipefail
-          eval "$(ssh-agent -s)"
-          echo "${{ secrets.SSH_PRIVATE_KEY }}" | tr -d '\r' | ssh-add -
-      
-          mkdir -p "$HOME/.ssh"
-          chmod 700 "$HOME/.ssh"
-          ssh-keyscan -T 5 -p 22 -H "${{ secrets.SSH_HOST }}" >> "$HOME/.ssh/known_hosts"
-          chmod 600 "$HOME/.ssh/known_hosts"
-      
           ssh -p 22 \
             -o BatchMode=yes \
             -o PreferredAuthentications=publickey \
             -o IdentitiesOnly=yes \
+            -o HostKeyAlgorithms=+ssh-ed25519,ssh-rsa \
             -o UserKnownHostsFile="$HOME/.ssh/known_hosts" \
             "${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }}" \
-            "hostname; uptime"
+            "set -e;
+             cd '${{ secrets.WORK_DIR }}';
+             git fetch origin;
+             git checkout '${{ secrets.MAIN_BRANCH }}';
+             git pull --ff-only;"
