@@ -25,21 +25,21 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-
-          # Prepare SSH dir
+      
           mkdir -p "$HOME/.ssh"
           chmod 700 "$HOME/.ssh"
-
-          # Start agent + add key (agent is only valid within this step)
-          eval "$(ssh-agent -s)"
-          echo "${{ secrets.SSH_PRIVATE_KEY }}" | tr -d '\r' | ssh-add -
-
-          # Strict host key checking (safe)
+      
+          # Write the private key to a file (reliable vs agent across configs)
+          KEYFILE="$HOME/.ssh/id_ed25519"
+          echo "${{ secrets.SSH_PRIVATE_KEY }}" | tr -d '\r' > "$KEYFILE"
+          chmod 600 "$KEYFILE"
+      
+          # known_hosts
           ssh-keyscan -T 5 -p 22 -H "${{ secrets.SSH_HOST }}" >> "$HOME/.ssh/known_hosts"
           chmod 600 "$HOME/.ssh/known_hosts"
-
-          # Test login (replace "echo ok" with your deploy command when confirmed)
-          ssh -vvv -p 22 \
+      
+          # Test auth (use -vvv until it works, then drop it)
+          ssh -vvv -p 22 -i "$KEYFILE" \
             -o BatchMode=yes \
             -o PreferredAuthentications=publickey \
             -o IdentitiesOnly=yes \
