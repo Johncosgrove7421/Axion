@@ -20,5 +20,10 @@ baseline_packages:
   - python3
   - python3-pip
   - chrony
+  - tree
+  - kubectl
+  - golang
+  - 
+
 
 baseline_timezone: "America/New_York"
