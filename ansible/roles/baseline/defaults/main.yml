@@ -21,7 +21,4 @@ baseline_packages:
   - python3-pip
   - chrony
 
-baseline_remove_packages:
-  - triggerhappy
-
 baseline_timezone: "America/New_York"
