@@ -18,7 +18,7 @@ jobs:
               with:
                 service-key: ${{ secrets.TWINGATE_SERVICE_KEY }}
                 
-            - name:
+            - name: Install Ansible
               run: sudo apt-get install -y ansible
 
             - name: Prepare SSH Key
