@@ -8,12 +8,6 @@
     name: "{{ baseline_packages }}"
     state: present
 
-- name: Remove unwanted packages
-  ansible.builtin.apt:
-    name: " {{ baseline_remove_packages }}"
-    state: absent
-  when: baseline_remove_packages | length > 0
-
 - name: Set timezone
   ansible.builtin.timezone:
     name: "{{ baseline_timezone }}"
