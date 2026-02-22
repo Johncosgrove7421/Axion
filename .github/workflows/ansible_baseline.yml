@@ -1,0 +1,43 @@
+name: Daily Ansible Baseline
+
+on:
+  schedule:
+    - cron: "0 6 * * *"
+  workflow_dispatch:
+
+jobs:
+    baseline:
+        runs-on: ubuntu-latest
+        steps:
+            - uses: actions/checkout@v4
+
+            - name: Connect to Twingate
+              uses: twingate/github-action@v1
+              with:
+                service-key: ${{ secrets.TWINGATE_SERVICE_KEY }}
+                
+            - name:
+              run: |
+                sudo apt-get update
+                sudo apt-get install -y Ansible
+
+            - name: Prepare SSH Key
+              shell: bash
+              run: |
+                set -euo pipeline
+                mkdir -p "$HOME/.ssh"
+                chmod 700 "$HOME/.ssh"
+
+                KEYFILE="$HOME/.ssh/id_ed25519"
+                echo "${{ secrets.SSH_PRIVATE_KEY }}" | tr -d '\r' > "$KEYFILE"
+                chmod 600 "$KEYFILE"
+
+                ssh-keyscan -T 5 -p 22 -H 192.168.50.67 >> "$HOME/.ssh/known_hosts"
+                ssh-keyscan -T 5 -p 22 -H 192.168.50.X >> "$HOME/.ssh/known_hosts"
+                ssh-keyscan -T 5 -p 22 -H 192.168.50.X >> "$HOME/.ssh/known_hosts"
+                ssh-keyscan -T 5 -p 22 -H 192.168.50.X >> "$HOME/.ssh/known_hosts"
+                chmod 600 "$HOME/.ssh/known_hosts"
+                
+            - name: Run baseline
+              run: |
+                ansible-playbook -i ansible/inventory/hosts.yml ansible/playbooks/baseline.yml

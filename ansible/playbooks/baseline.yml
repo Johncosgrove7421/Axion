@@ -1,0 +1,7 @@
+- name: Baseline utilities on Raspberry Pi OS nodes
+  hosts: pi_nodes
+  become: true
+  gather_facts: true
+  roles:
+    - baseline
+  

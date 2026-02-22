@@ -1,0 +1,32 @@
+- name: Update apt cache (daily-safe)
+  ansible.builtin.apt:
+    update_cache: yes
+    cache_valid_time: 3600
+
+- name: Install baseline packages
+  ansible.builtin.apt:
+    name: "{{ baseline_packages }}"
+    state: present
+
+- name: Remove unwanted packages
+  ansible.builtin.apt:
+    name: " {{ baseline_remove_packages }}"
+    state: absent
+  when: baseline_remove_packages | length > 0
+
+- name: Set timezone
+  ansible.builtin.timezone:
+    name: "{{ baseline_timezone }}"
+
+- name: Ensure chrony is enabled and running
+  ansible.builtin.service:
+    name: chrony
+    state: started
+    enabled: yes
+
+- name: Ensure SSH is enabled and running
+  ansible.builtin.service:
+    name: ssh
+    state: started
+    enabled: yes
+

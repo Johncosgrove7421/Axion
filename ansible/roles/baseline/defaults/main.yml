@@ -1,0 +1,27 @@
+baseline_packages:
+  - curl
+  - wget
+  - jq
+  - git
+  - vim
+  - nano
+  - htop
+  - tmux
+  - unzip
+  - zip
+  - rsync
+  - ca-certificates
+  - net-tools
+  - dnsutils
+  - lsof
+  - iotop
+  - nmap
+  - openssh-client
+  - python3
+  - python3-pip
+  - chrony
+
+baseline_remove_packages:
+  - triggerhappy
+
+baseline_timezone: "America/New_York"
