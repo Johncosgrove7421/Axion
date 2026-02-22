@@ -23,7 +23,6 @@ baseline_packages:
   - tree
   - kubectl
   - golang
-  - 
 
 
 baseline_timezone: "America/New_York"
