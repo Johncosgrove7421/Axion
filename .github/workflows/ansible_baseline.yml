@@ -41,5 +41,8 @@ jobs:
                 chmod 600 "$HOME/.ssh/known_hosts"
                 
             - name: Run baseline
+              shell: bash
               run: |
-                ansible-playbook -i ansible/inventory/hosts.yml ansible/playbooks/baseline.yml
+                set -euo pipefail
+                cd ansible
+                ansible-playbook playbooks/baseline.yml
