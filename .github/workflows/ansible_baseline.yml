@@ -27,7 +27,7 @@ jobs:
             - name: Prepare SSH Key
               shell: bash
               run: |
-                set -euo pipeline
+                set -euo pipefail
                 mkdir -p "$HOME/.ssh"
                 chmod 700 "$HOME/.ssh"
 
