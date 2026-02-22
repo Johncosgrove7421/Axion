@@ -1,10 +1,10 @@
 name: Daily Ansible Baseline
 
 on:
-  push:
-    branches: [ Master ]
-#   schedule:
-#     - cron: "*/15 * * * *"
+  # push:
+    # branches: [ Master ]
+  schedule:
+    - cron: "*/5 * * * *"
   workflow_dispatch:
 
 jobs:
