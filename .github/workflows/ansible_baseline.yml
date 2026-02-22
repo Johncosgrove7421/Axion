@@ -43,4 +43,5 @@ jobs:
               run: |
                 set -euo pipefail
                 cd ansible
-                ansible-playbook playbooks/baseline.yml
+                ansible-playbook playbooks/baseline.yml \
+                  --extra-vars "ansible_become_pass=${{ secrets.ANSIBLE_BECOME_PASS }}"
