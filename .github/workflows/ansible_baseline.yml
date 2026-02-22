@@ -2,9 +2,9 @@ name: Daily Ansible Baseline
 
 on:
   schedule:
-    branches: [ Master ]
-    - cron: "53 5 * * *"
+    - cron: "57 5 * * *"
   workflow_dispatch:
+    branches: [ Master ]
 
 jobs:
     baseline:
