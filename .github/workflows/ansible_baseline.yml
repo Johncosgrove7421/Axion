@@ -19,10 +19,7 @@ jobs:
                 service-key: ${{ secrets.TWINGATE_SERVICE_KEY }}
                 
             - name:
-              run: |
-                sudo apt-get update -y
-                sudo apt-get upgrade -y
-                sudo apt-get install -y ansible
+              run: sudo apt-get install -y ansible
 
             - name: Prepare SSH Key
               shell: bash
