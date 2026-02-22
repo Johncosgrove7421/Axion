@@ -39,7 +39,7 @@
   register: reboot_required
 
 - name: Reboot if required
-  ansible.builtin.debug:
+  ansible.builtin.reboot:
     msg: "Rebooting after package upgrade"
     reboot_timeout: 900
   when: reboot_required.stat.exists
